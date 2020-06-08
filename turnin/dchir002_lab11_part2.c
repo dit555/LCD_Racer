@@ -67,13 +67,15 @@ const unsigned long p2 = 300;
 //variables for CSM
 unsigned char x;
 unsigned char temp;
-unsigned char m1[] = "0";
+const unsigned char m1[] = "CS120B is Legend";
+const unsigned char m2[] = "... wait for it ";
+const unsigned char m3[] = "DARY!           ";
 
 //sms
 enum Lights { L_Start, L_disp};
 int Tick_L(int state);
 
-enum Message {M_Start, M_Disp};
+enum Message {M_Start, M_Wait, M_1, M_2, M_3};
 int Tick_M(int state);
 
 void RUN() { //changed name from timerISR to avoid conflictiong things
@@ -136,22 +138,22 @@ int Tick_L(int state){
 			x = GetKeypadKey();
   		        switch(x){
                         	case '\0': PORTB = 0x1F; break;
-                        	case '1': PORTB = 0x01; temp = x; break;
-	                        case '2': PORTB = 0x02; temp = x;break;
-       		                case '3': PORTB = 0x03; temp = x;break;
-                        	case '4': PORTB = 0x04; temp = x;break;
-                        	case '5': PORTB = 0x05; temp = x;break;
-                        	case '6': PORTB = 0x06; temp = x;break;
-                        	case '7': PORTB = 0x07; temp = x;break;
-                        	case '8': PORTB = 0x08; temp = x;break;
-                        	case '9': PORTB = 0x09; temp = x;break;
-                        	case 'A': PORTB = 0x0A; temp = x;break;
-                        	case 'B': PORTB = 0x0B; temp = x;break;
-                        	case 'C': PORTB = 0x0C; temp = x;break;
-                        	case 'D': PORTB = 0x0D; temp = x;break;
-                        	case '*': PORTB = 0x0E; temp = x;break;
-                        	case '0': PORTB = 0x00; temp = x;break;
-                        	case '#': PORTB = 0x0F; temp = x;break;
+                        	case '1': PORTB = 0x01; temp = 1; break;
+	                        case '2': PORTB = 0x02; temp = 2; break;
+       		                case '3': PORTB = 0x03; temp = 3;break;
+                        	case '4': PORTB = 0x04; break;
+                        	case '5': PORTB = 0x05; break;
+                        	case '6': PORTB = 0x06; break;
+                        	case '7': PORTB = 0x07; break;
+                        	case '8': PORTB = 0x08; break;
+                        	case '9': PORTB = 0x09; break;
+                        	case 'A': PORTB = 0x0A; break;
+                        	case 'B': PORTB = 0x0B; break;
+                        	case 'C': PORTB = 0x0C; break;
+                        	case 'D': PORTB = 0x0D; break;
+                        	case '*': PORTB = 0x0E; break;
+                        	case '0': PORTB = 0x00; break;
+                        	case '#': PORTB = 0x0F; break;
                         	default: PORTB = 0x1B; break;
                 	}
 			break;
@@ -163,15 +165,27 @@ int Tick_L(int state){
 
 int Tick_M(int state){
 	switch(state){
-		case M_Start: state = M_Disp; break;
-		case M_Disp: state = M_Disp; break;
+		case M_Start: state = M_Wait; break;
+		case M_Wait:
+			if (temp == 1)
+				state = M_1;
+			else if(temp == 2)
+				state = M_2;
+			else if(temp == 3)
+				state = M_3;
+			else
+				state = M_Wait;
+			break;
+		case M_1: state = M_Wait; break;
+		case M_2: state = M_Wait; break;
+		case M_3: state = M_Wait; break;
 		default: state = M_Start;
 	}
 
 	switch(state){
-		case M_Disp: LCD_ClearScreen(); 
-			  m1[0] = temp;
-			  LCD_DisplayString(1, m1); break;
+		case M_1: LCD_ClearScreen(); LCD_DisplayString(1, m1); break;
+		case M_2: LCD_ClearScreen(); LCD_DisplayString(1, m2); break;
+		case M_3: LCD_ClearScreen(); LCD_DisplayString(1, m3); break;
 
 	}
 	return state;

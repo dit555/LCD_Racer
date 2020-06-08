@@ -14,6 +14,7 @@
 #include "bit.h"
 #include "keypad.h"
 #include "io.h"
+#include <stdlib.h>
 #endif
 
 
@@ -67,15 +68,20 @@ const unsigned long p2 = 100;
 //variables for CSM
 unsigned char x;
 unsigned char temp;
-unsigned char j = 1;
-unsigned char m1[] = "Congratulations!";
+unsigned char player = '>';
+unsigned char playerIndex = 2;
+unsigned char obstacle = '#';
+unsigned char gOver = 0;
+unsigned char obstacleIndex = 1;
+unsigned char init[] = "D to start";
+unsigned char r;
 
 //sms
 enum Lights { L_Start, L_disp};
 int Tick_L(int state);
 
-enum Message {M_Start, M_Wait, M_Disp};
-int Tick_M(int state);
+enum Update {U_Start, U_Disp, U_Pause, U_Menu, U_GO};
+int Tick_U(int state);
 
 void RUN() { //changed name from timerISR to avoid conflictiong things
         unsigned char i;
@@ -101,11 +107,11 @@ int main(void) {
         i++;
 
 	//task 2
-        tasks[i].state = M_Start;
+        tasks[i].state = U_Start;
         tasks[i].period = p2;
         tasks[i].elapsedTime = tasks[i].period;
-        tasks[i].TickFct = &Tick_M;
-        i++;
+        tasks[i].TickFct = &Tick_U;
+   	i++;
 
 	
 	TimerSet(pG);
@@ -116,7 +122,7 @@ int main(void) {
 	DDRC = 0xF0; PORTC = 0x0F;
 	DDRD = 0xFF; PORTD = 0x00;
 	LCD_init();
-	LCD_DisplayString(1, m1);
+	LCD_DisplayString(1, init);
     	while (1) {
 		RUN();
     	}
@@ -161,24 +167,89 @@ int Tick_L(int state){
 	return state;
 }
 
-int Tick_M(int state){
+int Tick_U (int state){
+
 	switch(state){
-		case M_Start: state = M_Wait; break;
-		case M_Wait: state = (temp != '\0') ? M_Disp : M_Wait; break;
-		case M_Disp: state = M_Wait; break;
-		default: state = M_Start;
+		case U_Start: state = U_Menu; break;
+		case U_Menu:
+			if (x == 'D'){
+				LCD_ClearScreen();
+				LCD_Cursor(2);
+				LCD_WriteData(player);
+				LCD_Cursor(1);
+				playerIndex = 2;
+				state = U_Disp;
+			}
+			else
+				state = U_Menu;
+			break;
+		case U_Disp: state = (x == 'D') ? U_Pause : U_Disp;
+			    if (gOver) state = U_GO; break;
+		case U_Pause: state = (x == 'D') ? U_Disp : U_Pause; break;
+		case U_GO: state = (x == 'D') ? U_Start : U_GO; break;
 	}
 
 	switch(state){
-		case M_Disp:
-			  LCD_Cursor(j);
-			  LCD_WriteData(x);
-			  if (j == 16)
-				  j = 1;
-			  else 
-				  j++;
-			  break;
+		case U_Start: gOver = 0; break;
+		case U_Menu: LCD_DisplayString(1, init); break;
+		case U_Disp: 
+			//obstacle
+		       	r = rand() % 2;
+			if (r ==  0 && (obstacleIndex == 1 || obstacleIndex == 17)){
+				LCD_Cursor(16);
+				LCD_WriteData(obstacle);
+				LCD_Cursor(1);
+				LCD_WriteData(' ');
+				LCD_Cursor(17);
+				LCD_WriteData(' ');
+				obstacleIndex = 16;
+			}
+			else if (r == 1 && (obstacleIndex == 1 || obstacleIndex == 17)){
+				LCD_Cursor(32);
+                                LCD_WriteData(obstacle);
+                                LCD_Cursor(1);
+                                LCD_WriteData(' ');
+                                LCD_Cursor(17);
+                                LCD_WriteData(' ');
+				obstacleIndex = 32;
+			}
+			else{
+				LCD_Cursor(obstacleIndex);
+				LCD_WriteData(' ');
+				LCD_Cursor(obstacleIndex - 1);
+				LCD_WriteData(obstacle);
+				obstacleIndex--;
+			}			
 
+			//player
+			if (x == 'A'){
+				LCD_Cursor(2);
+				LCD_WriteData(player);
+				LCD_Cursor(18);
+				LCD_WriteData(' ');
+				LCD_Cursor(1);
+				playerIndex = 2;	
+	
+			}
+			else if (x == 'B'){
+				LCD_Cursor(2);
+                                LCD_WriteData(' ');
+                                LCD_Cursor(18);
+                                LCD_WriteData(player);
+				LCD_Cursor(17);
+				playerIndex = 18;
+			}
+
+			//crash
+			if (playerIndex == obstacleIndex){
+				gOver = 1;
+			}
+			break;
+		case U_GO:
+			gOver = 1;
+			LCD_ClearScreen();
+			LCD_DisplayString(1, "Game Over!");
+			break;
 	}
 	return state;
 }

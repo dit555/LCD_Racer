@@ -61,9 +61,9 @@ typedef struct task {
 
 task tasks[2];
 const unsigned char tasksNum = 2;
-const unsigned long pG = 100;
+const unsigned long pG = 50;
 const unsigned long p1 = 100;
-const unsigned long p2 = 100;
+const unsigned long p2 = 200;
 
 //variables for CSM
 unsigned char x;
@@ -71,11 +71,13 @@ unsigned char temp;
 unsigned char player = '>';
 unsigned char playerIndex = 2;
 unsigned char obstacle = '#';
+unsigned char obstacle2 = '@';
+unsigned char obstacle2Index = 1;
 unsigned char gOver = 0;
 unsigned char obstacleIndex = 1;
 unsigned char init[] = "D to start";
 unsigned char r;
-
+unsigned char score = 0;
 //sms
 enum Lights { L_Start, L_disp};
 int Tick_L(int state);
@@ -141,7 +143,7 @@ int Tick_L(int state){
 		case L_disp:
 			x = GetKeypadKey();
   		        switch(x){
-                        	case '\0': PORTB = 0x1F; temp = x; break;
+                        	case '\0': PORTB = 0x1F; break;
                         	case '1': PORTB = 0x01; temp = x; break;
 	                        case '2': PORTB = 0x02; temp = x;break;
        		                case '3': PORTB = 0x03; temp = x;break;
@@ -193,33 +195,68 @@ int Tick_U (int state){
 		case U_Start: gOver = 0; break;
 		case U_Menu: LCD_DisplayString(1, init); break;
 		case U_Disp: 
-			//obstacle
+			//obstacle2
 		       	r = rand() % 2;
-			if (r ==  0 && (obstacleIndex == 1 || obstacleIndex == 17)){
+			if (r ==  0 && (obstacleIndex == 8 || obstacleIndex == 20)){
 				LCD_Cursor(16);
-				LCD_WriteData(obstacle);
+				LCD_WriteData(obstacle2);
 				LCD_Cursor(1);
 				LCD_WriteData(' ');
 				LCD_Cursor(17);
 				LCD_WriteData(' ');
-				obstacleIndex = 16;
+				obstacle2Index = 16;
 			}
-			else if (r == 1 && (obstacleIndex == 1 || obstacleIndex == 17)){
+			else if (r == 1 && (obstacleIndex == 8 || obstacleIndex == 20)){
 				LCD_Cursor(32);
+                                LCD_WriteData(obstacle2);
+                                LCD_Cursor(1);
+                                LCD_WriteData(' ');
+                                LCD_Cursor(17);
+                                LCD_WriteData(' ');
+				obstacle2Index = 32;
+			}
+			else if (obstacle2Index == 1 || obstacle2Index == 17){
+				LCD_Cursor(1);
+				LCD_WriteData(' ');
+				LCD_Cursor(17);
+				LCD_WriteData(' ');
+			}
+			else if (obstacle2Index !=1 && obstacle2Index != 17) {
+				LCD_Cursor(obstacle2Index);
+				LCD_WriteData(' ');
+				LCD_Cursor(obstacle2Index - 1);
+				LCD_WriteData(obstacle2);
+				obstacle2Index--;
+			}			
+			
+			//obstacle
+			r = rand() % 2;
+                        if (r ==  0 && (obstacleIndex == 1 || obstacleIndex == 17)){
+                                LCD_Cursor(16);
                                 LCD_WriteData(obstacle);
                                 LCD_Cursor(1);
                                 LCD_WriteData(' ');
                                 LCD_Cursor(17);
                                 LCD_WriteData(' ');
-				obstacleIndex = 32;
-			}
-			else{
-				LCD_Cursor(obstacleIndex);
-				LCD_WriteData(' ');
-				LCD_Cursor(obstacleIndex - 1);
-				LCD_WriteData(obstacle);
-				obstacleIndex--;
-			}			
+                                obstacleIndex = 16;
+                        }
+                        else if (r == 1 && (obstacleIndex == 1 || obstacleIndex == 17)){
+                                LCD_Cursor(32);
+                                LCD_WriteData(obstacle);
+                                LCD_Cursor(1);
+                                LCD_WriteData(' ');
+                                LCD_Cursor(17);
+                                LCD_WriteData(' ');
+                                obstacleIndex = 32;
+                        }
+                        else{
+                                LCD_Cursor(obstacleIndex);
+                                LCD_WriteData(' ');
+                                LCD_Cursor(obstacleIndex - 1);
+                                LCD_WriteData(obstacle);
+                                obstacleIndex--;
+                        }
+
 
 			//player
 			if (x == 'A'){
@@ -241,10 +278,24 @@ int Tick_U (int state){
 			}
 
 			//crash
-			if (playerIndex == obstacleIndex){
+			if (playerIndex == obstacleIndex || playerIndex == obstacle2Index){
 				gOver = 1;
 			}
+			else
+				score++;
+
+			if (score == 50){
+				tasks[2].period = 150;
+        			tasks[2].elapsedTime = tasks[2].period;
+			}
+			else if (score == 100){
+				tasks[2].period = 100;
+        			tasks[2].elapsedTime = tasks[2].period;
+
+			}
+
 			break;
+
 		case U_GO:
 			gOver = 1;
 			LCD_ClearScreen();
